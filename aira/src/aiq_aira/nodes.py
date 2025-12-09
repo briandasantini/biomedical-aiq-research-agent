@@ -849,7 +849,8 @@ async def call_virtual_screening_nims(
         return {"vs_steps_info": writer_info}
     
     try:
-        curr_out_dir = os.path.join("virtual_screening_output" , datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+        # Use the mounted volume path for Docker-in-Docker compatibility
+        curr_out_dir = os.path.join("/virtual_screening_output" , datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
         os.makedirs(curr_out_dir, exist_ok=True)
         assert os.path.isdir(curr_out_dir)
     except Exception as e:

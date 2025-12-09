@@ -90,7 +90,8 @@ class MDRefinementIntegration:
             skip_mmpbsa: Skip MM-PBSA calculation (faster)
             gpu_id: GPU device ID
         """
-        self.output_dir = Path(output_dir)
+        # Convert to absolute path for Docker volume mounts
+        self.output_dir = Path(output_dir).resolve()
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
         self.simulation_time_ns = simulation_time_ns
@@ -216,18 +217,24 @@ class MDRefinementIntegration:
                 equilibration_time_ps=100.0,  # Shorter for screening
             )
             
+            # Ensure absolute path for Docker volume mounts
+            md_work_dir = (pose_dir / "md_run").resolve()
+            
             pipeline = MDPipeline(
-                work_dir=pose_dir / "md_run",
+                work_dir=md_work_dir,
                 config=config,
                 use_docker=self.use_docker,
             )
             
             # Run in executor to not block event loop
+            # Ensure absolute path for Docker
+            complex_pdb_abs = str(Path(complex_pdb).resolve())
+            
             loop = asyncio.get_event_loop()
             md_result = await loop.run_in_executor(
                 None,
                 lambda: pipeline.run(
-                    complex_pdb=complex_pdb,
+                    complex_pdb=complex_pdb_abs,
                     ligand_name=ligand_name,
                     skip_mmpbsa=self.skip_mmpbsa,
                 )
