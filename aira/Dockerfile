@@ -45,7 +45,8 @@ ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_AIQ_AIRA="0.0.0"
 # Use uv to install Python dependencies 
 RUN uv pip install /app 
 
-# Install the GROMACS MD refinement pipeline from GitHub
-RUN uv pip install git+https://github.com/briandasantini/gromacs-md-refinement-pipeline.git
+# Install the GROMACS MD refinement pipeline from GitHub (private repo)
+ARG GITHUB_TOKEN
+RUN uv pip install git+https://${GITHUB_TOKEN}@github.com/briandasantini/gromacs-md-refinement-pipeline.git
 
 RUN chmod +x /entrypoint.sh
