@@ -47,6 +47,7 @@ RUN uv venv --python-preference managed
 ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_AIQ_AIRA="0.0.0"
 
 # Install both aiq_aira and gromacs_md in the venv
-RUN uv pip install /app /app/gromacs_md_pipeline
+# Also install rdkit for MOL to PDB conversion in MD refinement
+RUN uv pip install /app /app/gromacs_md_pipeline rdkit
 
 RUN chmod +x /entrypoint.sh
