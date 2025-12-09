@@ -39,14 +39,14 @@ RUN uv python install 3.12
 COPY ./aira/entrypoint.sh /entrypoint.sh
 COPY ./aira/. /app
 
+# Copy GROMACS pipeline into /app for uv to find
+COPY ./gromacs_md_pipeline /app/gromacs_md_pipeline
+
+WORKDIR /app
 RUN uv venv --python-preference managed
 ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_AIQ_AIRA="0.0.0"
 
-# Use uv to install Python dependencies 
-RUN uv pip install /app 
-
-# Install the GROMACS MD refinement pipeline from GitHub (private repo)
-ARG GITHUB_TOKEN
-RUN uv pip install git+https://${GITHUB_TOKEN}@github.com/briandasantini/gromacs-md-refinement-pipeline.git
+# Install both aiq_aira and gromacs_md in the venv
+RUN uv pip install /app /app/gromacs_md_pipeline
 
 RUN chmod +x /entrypoint.sh
