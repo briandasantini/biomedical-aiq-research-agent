@@ -48,6 +48,7 @@ from aiq_aira.constants import ASYNC_TIMEOUT
 
 from aiq_aira.search_utils import process_single_query, deduplicate_and_format_sources
 from aiq_aira.report_gen_utils import summarize_report
+from aiq_aira.md_refinement import run_md_refinement, format_md_results_for_report, MD_AVAILABLE
 
 logger = logging.getLogger(__name__)
 store = InMemoryByteStore()
@@ -881,8 +882,51 @@ async def call_virtual_screening_nims(
         writer({"call_virtual_screening_nims": add_writer_info})
     except Exception as e:
         logger.info(f"An error occurred in dock_molecule: {e}")
+    
+    # NEW: MD Refinement step after DiffDock
+    md_results_text = ""
+    enable_md_refinement = os.getenv("ENABLE_MD_REFINEMENT", "false").lower() == "true"
+    
+    if enable_md_refinement and MD_AVAILABLE:
+        try:
+            writer_info_new = "\n Starting MD refinement of docked poses... \n"
+            writer_info += writer_info_new
+            writer({"call_virtual_screening_nims": writer_info_new})
+            
+            md_simulation_time = float(os.getenv("MD_SIMULATION_TIME_NS", "5.0"))
+            md_max_poses = int(os.getenv("MD_MAX_POSES", "3"))
+            md_skip_mmpbsa = os.getenv("MD_SKIP_MMPBSA", "false").lower() == "true"
+            
+            md_output_dir = os.path.join(curr_out_dir, "md_refinement")
+            
+            md_results, md_results_text = await run_md_refinement(
+                protein_pdb_path=pdb_filepath,
+                docked_ligands_dir=curr_out_dir,
+                output_dir=md_output_dir,
+                writer=writer,
+                simulation_time_ns=md_simulation_time,
+                max_poses=md_max_poses,
+                skip_mmpbsa=md_skip_mmpbsa,
+            )
+            
+            writer_info += md_results_text
+            writer({"call_virtual_screening_nims": md_results_text})
+            
+            # Store MD results in state for report generation
+            state.md_refinement_results = md_results_text
+            
+        except Exception as e:
+            logger.error(f"MD refinement failed: {e}")
+            writer_info_new = f"\n MD refinement encountered an error: {e} \n"
+            writer_info += writer_info_new
+            writer({"call_virtual_screening_nims": writer_info_new})
+    elif enable_md_refinement and not MD_AVAILABLE:
+        writer_info_new = "\n MD refinement requested but gromacs_md package not installed. Skipping. \n"
+        writer_info += writer_info_new
+        writer({"call_virtual_screening_nims": writer_info_new})
+    
     state.vs_steps_info = writer_info
-    return {"vs_steps_info": writer_info}
+    return {"vs_steps_info": writer_info, "md_refinement_results": md_results_text}
 
 
 

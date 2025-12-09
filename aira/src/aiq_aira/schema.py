@@ -103,6 +103,8 @@ class AIRAState:
     vs_queries_results: list[str] | None = None
     vs_citations: str | None = None
     vs_steps_info: str | None = None
+    # MD Refinement results (added for GROMACS integration)
+    md_refinement_results: str | None = None
 
 
 ##

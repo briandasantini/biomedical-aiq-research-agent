@@ -53,9 +53,25 @@ services:
       AIRA_APPLY_GUARDRAIL: "false"
       OPENAI_API_KEY: ${NVIDIA_API_KEY:-your-nvidia-api-key}
       AIRA_HOSTED_NIMS: ${AIRA_HOSTED_NIMS:-false}
+      # MD Refinement settings (GROMACS + MM-GBSA integration)
+      ENABLE_MD_REFINEMENT: ${ENABLE_MD_REFINEMENT:-false}
+      MD_SIMULATION_TIME_NS: ${MD_SIMULATION_TIME_NS:-5.0}
+      MD_MAX_POSES: ${MD_MAX_POSES:-10}
+      MD_SKIP_MMPBSA: ${MD_SKIP_MMPBSA:-false}
+      MD_GPU_ID: ${MD_GPU_ID:-0}
     volumes:
       - ../../aira/configs:/app/configs
       - ../../virtual_screening_output:/virtual_screening_output
+      # Docker socket for running GROMACS containers from inside aira-backend
+      - /var/run/docker.sock:/var/run/docker.sock
+    # GPU access for MM-GBSA calculations (uses conda environment inside container)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${MD_GPU_ID:-0}']
+              capabilities: [gpu]
     networks:
       - nvidia-rag
     profiles: ["aira"]
